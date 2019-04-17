@@ -4,3 +4,11 @@ go_import_path: github.com/coreos/airlock
 go:
   - "1.11"
   - "1.12"
+
+env:
+  global:
+    - GO111MODULE="on"
+    - GOFLAGS="-mod=vendor"
+
+install:
+  - go mod verify
