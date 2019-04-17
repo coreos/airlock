@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -11,6 +13,7 @@ func main() {
 	err := run()
 	if err != nil {
 		exitCode = 1
+		logrus.Errorln(err)
 	}
 	os.Exit(exitCode)
 }
