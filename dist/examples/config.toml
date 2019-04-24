@@ -1,0 +1,22 @@
+# Main service configuration
+[service]
+address = "127.0.0.1"
+port = 3333
+
+# Etcd-v3 client configuration
+[etcd3]
+endpoints = [ "http://127.0.0.1:2379" ]
+
+# Lock configuration, base reboot group
+[lock]
+default_group_name = "default"
+default_slots = 2
+
+# Lock configuration, additional reboot groups
+
+[[lock.groups]]
+name = "workers"
+
+[[lock.groups]]
+name = "masters"
+slots = 1
