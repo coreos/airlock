@@ -1,10 +1,11 @@
 package main
 
 import (
-	"errors"
 	"os"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/coreos/airlock/internal/cli"
 )
 
 func main() {
@@ -19,5 +20,10 @@ func main() {
 }
 
 func run() error {
-	return errors.New("unimplemented")
+	cmd, err := cli.Init()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Execute()
 }
