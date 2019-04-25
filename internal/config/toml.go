@@ -8,34 +8,34 @@ import (
 
 // tomlConfig is the top-level TOML configuration fragment
 type tomlConfig struct {
-	Service *serviceSection
-	Etcd3   *etcd3Section
-	Lock    *lockSection
+	Service *serviceSection `toml:"service"`
+	Etcd3   *etcd3Section   `toml:"etcd3"`
+	Lock    *lockSection    `toml:"lock"`
 }
 
 // serviceSection holds the optional `service` fragment
 type serviceSection struct {
-	Address *string
-	Port    *uint64
+	Address *string `toml:"address"`
+	Port    *uint64 `toml:"port"`
 }
 
 // etcd3Section holds the optional `etcd3` fragment
 type etcd3Section struct {
-	Endpoints    []string
-	TxnTimeoutMs *uint64 `toml:"transaction_timeout_ms"`
+	Endpoints    []string `toml:"endpoints"`
+	TxnTimeoutMs *uint64  `toml:"transaction_timeout_ms"`
 }
 
 // lockSection holds the optional `lock` fragment
 type lockSection struct {
-	DefaultGroupName *string `toml:"default_group_name"`
-	DefaultSlots     *uint64 `toml:"default_slots"`
-	Groups           []lockGroupSection
+	DefaultGroupName *string            `toml:"default_group_name"`
+	DefaultSlots     *uint64            `toml:"default_slots"`
+	Groups           []lockGroupSection `toml:"groups"`
 }
 
 // lockGroupSection is a `lock.groups` entry
 type lockGroupSection struct {
-	Name  string
-	Slots *uint64
+	Name  string  `toml:"name"`
+	Slots *uint64 `toml:"slots"`
 }
 
 // parseConfig tries to parse and merge TOML config and default settings
