@@ -12,3 +12,8 @@ env:
 
 install:
   - go mod verify
+
+script:
+  - go build
+  - go test -v ./...
+  - docker build --rm -f dist/Dockerfile -t quay.io/coreos/airlock:travis .
