@@ -2,6 +2,7 @@
 [service]
 address = "127.0.0.1"
 port = 3333
+tls = false
 
 # Etcd-v3 client configuration
 [etcd3]

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"time"
 )
 
@@ -8,6 +9,7 @@ import (
 type Settings struct {
 	ServiceAddress string
 	ServicePort    uint64
+	ServiceTLS     bool
 
 	EtcdEndpoints  []string
 	EtcdTxnTimeout time.Duration
@@ -29,6 +31,9 @@ func Parse(fpath string) (Settings, error) {
 	if len(settings.LockGroups) == 0 {
 		settings.LockGroups["default"] = 1
 	}
+	if settings.ServiceTLS {
+		return Settings{}, errors.New("TLS mode not yet implemented")
+	}
 
 	return settings, nil
 }
@@ -38,6 +43,7 @@ func defaultSettings() Settings {
 	return Settings{
 		ServiceAddress: "0.0.0.0",
 		ServicePort:    9090,
+		ServiceTLS:     true,
 
 		EtcdEndpoints:  []string{},
 		EtcdTxnTimeout: time.Duration(3) * time.Second,
