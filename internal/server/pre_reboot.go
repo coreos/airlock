@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/coreos/airlock/internal/lock"
+)
+
+var (
+	preRebootIncomingReqs = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "airlock_v1_pre_reboot_incoming_requests_total",
+		Help: "Total number of incoming requests to /v1/pre-reboot.",
+	})
 )
 
 const (
@@ -17,6 +25,8 @@ const (
 
 // PreReboot is the handler for the `/v1/pre-reboot` endpoint.
 func (a *Airlock) PreReboot() http.Handler {
+	prometheus.MustRegister(preRebootIncomingReqs)
+
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		code, err := a.preRebootHandler(req)
 		if err != nil {
@@ -31,7 +41,9 @@ func (a *Airlock) PreReboot() http.Handler {
 
 // preRebootHandler contains pre-reboot handling logic
 func (a *Airlock) preRebootHandler(req *http.Request) (int, error) {
+	preRebootIncomingReqs.Inc()
 	logrus.Debug("got pre-reboot request")
+
 	if a == nil {
 		return 500, errNilAirlockServer
 	}
