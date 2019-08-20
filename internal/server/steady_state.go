@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/coreos/airlock/internal/lock"
+)
+
+var (
+	steadyStateIncomingReqs = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "airlock_v1_steady_state_incoming_requests_total",
+		Help: "Total number of incoming requests to /v1/steady-state.",
+	})
 )
 
 const (
@@ -17,6 +25,8 @@ const (
 
 // SteadyState is the handler for the `/v1/steady-state` endpoint.
 func (a *Airlock) SteadyState() http.Handler {
+	prometheus.MustRegister(steadyStateIncomingReqs)
+
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		code, err := a.steadyStateHandler(req)
 		if err != nil {
@@ -31,7 +41,9 @@ func (a *Airlock) SteadyState() http.Handler {
 
 // steadyStateHandler contains logic to handle steady-state.
 func (a *Airlock) steadyStateHandler(req *http.Request) (int, error) {
+	steadyStateIncomingReqs.Inc()
 	logrus.Debug("got steady-state report")
+
 	if a == nil {
 		return 500, errNilAirlockServer
 	}

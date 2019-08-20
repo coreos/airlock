@@ -1,3 +1,10 @@
+# Status service configuration
+[status]
+enabled = true
+address = "127.0.0.1"
+port = 2222
+tls = false
+
 # Main service configuration
 [service]
 address = "127.0.0.1"

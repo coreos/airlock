@@ -11,6 +11,11 @@ type Settings struct {
 	ServicePort    uint64
 	ServiceTLS     bool
 
+	StatusAddress string
+	StatusEnabled bool
+	StatusPort    uint64
+	StatusTLS     bool
+
 	EtcdEndpoints  []string
 	EtcdTxnTimeout time.Duration
 
