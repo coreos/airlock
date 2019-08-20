@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/coreos/airlock/internal/server"
+	"github.com/coreos/airlock/internal/status"
 )
 
 var (
@@ -37,6 +38,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 
 	if runSettings.StatusEnabled {
 		statusMux := http.NewServeMux()
+		statusMux.Handle(status.MetricsEndpoint, status.Metrics())
 		statusService := http.Server{
 			Addr:    fmt.Sprintf("%s:%d", runSettings.StatusAddress, runSettings.StatusPort),
 			Handler: statusMux,
