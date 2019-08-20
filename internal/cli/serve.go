@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -24,23 +27,55 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 		"groups": runSettings.LockGroups,
 	}).Debug("lock groups")
 
-	logrus.WithFields(logrus.Fields{
-		"address": runSettings.ServiceAddress,
-		"port":    runSettings.ServicePort,
-	}).Info("starting service")
-
 	if runSettings == nil {
 		return errors.New("nil runSettings")
 	}
 	airlock := server.Airlock{*runSettings}
 
-	http.Handle(server.PreRebootEndpoint, airlock.PreReboot())
-	http.Handle(server.SteadyStateEndpoint, airlock.SteadyState())
+	stopCh := make(chan os.Signal)
+	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
 
-	listenAddr := fmt.Sprintf("%s:%d", runSettings.ServiceAddress, runSettings.ServicePort)
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
-		return err
+	if runSettings.StatusEnabled {
+		statusMux := http.NewServeMux()
+		statusService := http.Server{
+			Addr:    fmt.Sprintf("%s:%d", runSettings.StatusAddress, runSettings.StatusPort),
+			Handler: statusMux,
+		}
+		go runService(stopCh, statusService, airlock)
+		defer statusService.Close()
+
+		logrus.WithFields(logrus.Fields{
+			"address": runSettings.StatusAddress,
+			"port":    runSettings.StatusPort,
+		}).Info("status service")
+	} else {
+		logrus.Warn("status service disabled")
 	}
 
+	serviceMux := http.NewServeMux()
+	serviceMux.Handle(server.PreRebootEndpoint, airlock.PreReboot())
+	serviceMux.Handle(server.SteadyStateEndpoint, airlock.SteadyState())
+	mainService := http.Server{
+		Addr:    fmt.Sprintf("%s:%d", runSettings.ServiceAddress, runSettings.ServicePort),
+		Handler: serviceMux,
+	}
+	logrus.WithFields(logrus.Fields{
+		"address": runSettings.ServiceAddress,
+		"port":    runSettings.ServicePort,
+	}).Info("main service")
+	go runService(stopCh, mainService, airlock)
+	defer mainService.Close()
+
+	<-stopCh
 	return nil
+}
+
+// runService runs an HTTP service
+func runService(stopCh chan os.Signal, service http.Server, airlock server.Airlock) {
+	if err := service.ListenAndServe(); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"reason": err,
+		}).Error("service failure")
+	}
+	stopCh <- os.Interrupt
 }

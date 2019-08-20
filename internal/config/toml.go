@@ -9,6 +9,7 @@ import (
 // tomlConfig is the top-level TOML configuration fragment
 type tomlConfig struct {
 	Service *serviceSection `toml:"service"`
+	Status  *statusSection  `toml:"status"`
 	Etcd3   *etcd3Section   `toml:"etcd3"`
 	Lock    *lockSection    `toml:"lock"`
 }
@@ -16,6 +17,14 @@ type tomlConfig struct {
 // serviceSection holds the optional `service` fragment
 type serviceSection struct {
 	Address *string `toml:"address"`
+	Port    *uint64 `toml:"port"`
+	TLS     *bool   `toml:"tls"`
+}
+
+// statusSection holds the optional `service` fragment
+type statusSection struct {
+	Address *string `toml:"address"`
+	Enabled *bool   `toml:"enabled"`
 	Port    *uint64 `toml:"port"`
 	TLS     *bool   `toml:"tls"`
 }
@@ -60,6 +69,9 @@ func mergeToml(settings *Settings, cfg tomlConfig) {
 	if cfg.Service != nil {
 		mergeService(settings, *cfg.Service)
 	}
+	if cfg.Status != nil {
+		mergeStatus(settings, *cfg.Status)
+	}
 	if cfg.Etcd3 != nil {
 		mergeEtcd(settings, *cfg.Etcd3)
 	}
@@ -81,6 +93,25 @@ func mergeService(settings *Settings, cfg serviceSection) {
 	}
 	if cfg.TLS != nil {
 		settings.ServiceTLS = *cfg.TLS
+	}
+}
+
+func mergeStatus(settings *Settings, cfg statusSection) {
+	if settings == nil {
+		return
+	}
+
+	if cfg.Address != nil {
+		settings.StatusAddress = *cfg.Address
+	}
+	if cfg.Enabled != nil {
+		settings.StatusEnabled = *cfg.Enabled
+	}
+	if cfg.Port != nil {
+		settings.StatusPort = *cfg.Port
+	}
+	if cfg.TLS != nil {
+		settings.StatusTLS = *cfg.TLS
 	}
 }
 
