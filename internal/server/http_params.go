@@ -28,8 +28,8 @@ func validateIdentity(req *http.Request) (*NodeIdentity, error) {
 	var group string
 	var nodeID string
 
-	if req.Header.Get("fleet-reboot") != "true" {
-		return nil, errors.New("wrong 'fleet-reboot' header")
+	if req.Header.Get("fleet-lock-protocol") != "true" {
+		return nil, errors.New("wrong 'fleet-lock-protocol' header")
 	}
 
 	decoder := json.NewDecoder(req.Body)
