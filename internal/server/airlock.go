@@ -1,14 +1,13 @@
 package server
 
 import (
-	"errors"
-
 	"github.com/coreos/airlock/internal/config"
+	"github.com/coreos/airlock/internal/herrors"
 )
 
 var (
 	// errNilAirlockServer is returned on nil server
-	errNilAirlockServer = errors.New("nil Airlock server")
+	errNilAirlockServer = herrors.New(500, "nil_server", "nil Airlock server")
 )
 
 // Airlock is the main service
