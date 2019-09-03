@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
+	"github.com/coreos/airlock/internal/herrors"
 	"github.com/coreos/airlock/internal/lock"
 )
 
@@ -28,11 +29,10 @@ func (a *Airlock) PreReboot() http.Handler {
 	prometheus.MustRegister(preRebootIncomingReqs)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
-		code, err := a.preRebootHandler(req)
-		if err != nil {
-			http.Error(w, err.Error(), code)
+		if herr := a.preRebootHandler(req); herr != nil {
+			http.Error(w, herr.ToJSON(), herr.Code)
 		} else {
-			w.WriteHeader(code)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 
@@ -40,18 +40,20 @@ func (a *Airlock) PreReboot() http.Handler {
 }
 
 // preRebootHandler contains pre-reboot handling logic
-func (a *Airlock) preRebootHandler(req *http.Request) (int, error) {
+func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 	preRebootIncomingReqs.Inc()
 	logrus.Debug("got pre-reboot request")
 
 	if a == nil {
-		return 500, errNilAirlockServer
+		return &errNilAirlockServer
 	}
 
 	nodeIdentity, err := validateIdentity(req)
 	if err != nil {
-		logrus.Errorln("failed to validate client identity: ", err)
-		return 400, err
+		msg := fmt.Sprintf("failed to validate client identity: %s", err.Error())
+		logrus.Errorln(msg)
+		herr := herrors.New(400, "invalid_client_identity", msg)
+		return &herr
 	}
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
@@ -60,24 +62,29 @@ func (a *Airlock) preRebootHandler(req *http.Request) (int, error) {
 
 	slots, ok := a.LockGroups[nodeIdentity.Group]
 	if !ok {
-		err := fmt.Errorf("unknown group %q", nodeIdentity.Group)
-		logrus.Errorln("unable to satisfy client request: ", err)
-		return 400, err
+		msg := fmt.Sprintf("unknown group %q", nodeIdentity.Group)
+		logrus.Errorln(msg)
+		herr := herrors.New(400, "unknown_group", msg)
+		return &herr
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), a.EtcdTxnTimeout)
 	defer cancel()
 	lockManager, err := lock.NewManager(ctx, a.EtcdEndpoints, nodeIdentity.Group, slots)
 	if err != nil {
-		logrus.Errorln("failed to initialize semaphore manager: ", err)
-		return 500, err
+		msg := fmt.Sprintf("failed to initialize semaphore manager: %s", err.Error())
+		logrus.Errorln(msg)
+		herr := herrors.New(500, "failed_sem_init", msg)
+		return &herr
 	}
 	defer lockManager.Close()
 
 	err = lockManager.RecursiveLock(ctx, nodeIdentity.UUID)
 	if err != nil {
-		logrus.Errorln(err)
-		return 500, err
+		msg := fmt.Sprintf("failed to lock semaphore: %s", err.Error())
+		logrus.Errorln(msg)
+		herr := herrors.New(500, "failed_lock", err.Error())
+		return &herr
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -85,5 +92,5 @@ func (a *Airlock) preRebootHandler(req *http.Request) (int, error) {
 		"uuid":  nodeIdentity.UUID,
 	}).Debug("givin green-flag to pre-reboot request")
 
-	return http.StatusOK, nil
+	return nil
 }
