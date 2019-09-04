@@ -29,7 +29,7 @@ func (a *Airlock) SteadyState() http.Handler {
 	prometheus.MustRegister(steadyStateIncomingReqs)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
-		if herr := a.preRebootHandler(req); herr != nil {
+		if herr := a.steadyStateHandler(req); herr != nil {
 			http.Error(w, herr.ToJSON(), herr.Code)
 		} else {
 			w.WriteHeader(http.StatusOK)
