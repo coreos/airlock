@@ -16,6 +16,14 @@ var (
 		Short:             "Update/reboot manager, with distributed locking based on etcd3",
 		PersistentPreRunE: commonSetup,
 	}
+	cmdEx = &cobra.Command{
+		Use:   "ex",
+		Short: "Experimental commands",
+	}
+	cmdGet = &cobra.Command{
+		Use:   "get",
+		Short: "Introspect live state",
+	}
 
 	verbosity   int
 	configPath  string
@@ -27,7 +35,9 @@ func Init() (*cobra.Command, error) {
 	airlockCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "/etc/airlock/config.toml", "path to configuration file")
 	airlockCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v", "increase verbosity level")
 
-	airlockCmd.AddCommand(cmdServe)
+	cmdGet.AddCommand(cmdGetSlots)
+	cmdEx.AddCommand(cmdGet)
+	airlockCmd.AddCommand(cmdServe, cmdEx)
 
 	return airlockCmd, nil
 }

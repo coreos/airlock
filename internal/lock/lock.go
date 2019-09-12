@@ -89,6 +89,16 @@ func (m *Manager) UnlockIfHeld(ctx context.Context, id string) error {
 	return nil
 }
 
+// FetchSemaphore fetches current semaphore version
+func (m *Manager) FetchSemaphore(ctx context.Context) (*Semaphore, error) {
+	semaphore, _, err := m.get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return semaphore, nil
+}
+
 // Close reaps all running goroutines
 func (m *Manager) Close() {
 	if m == nil {
