@@ -79,13 +79,17 @@ func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 	}
 	defer lockManager.Close()
 
-	err = lockManager.RecursiveLock(ctx, nodeIdentity.UUID)
+	sem, err := lockManager.RecursiveLock(ctx, nodeIdentity.UUID)
 	if err != nil {
 		msg := fmt.Sprintf("failed to lock semaphore: %s", err.Error())
 		logrus.Errorln(msg)
 		herr := herrors.New(500, "failed_lock", err.Error())
 		return &herr
 	}
+
+	// Update metrics.
+	databaseLocksGauge.WithLabelValues(nodeIdentity.Group).Set(float64(len(sem.Holders)))
+	databaseSlotsGauge.WithLabelValues(nodeIdentity.Group).Set(float64(sem.TotalSlots))
 
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,

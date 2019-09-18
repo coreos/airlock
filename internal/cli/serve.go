@@ -8,13 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/coreos/airlock/internal/lock"
 	"github.com/coreos/airlock/internal/server"
 	"github.com/coreos/airlock/internal/status"
 )
@@ -24,23 +21,6 @@ var (
 		Use:  "serve",
 		RunE: runServe,
 	}
-
-	configGroups = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "airlock_config_groups",
-		Help: "Total number of configured groups.",
-	})
-	configSlots = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "airlock_config_semaphore_slots",
-		Help: "Total number of configured slots per group.",
-	}, []string{"group"})
-	databaseSlots = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "airlock_database_semaphore_slots",
-		Help: "Total number of slots per group, in the database.",
-	}, []string{"group"})
-	databaseLocks = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "airlock_database_semaphore_lock_holders",
-		Help: "Total number of locked slots per group, in the database.",
-	}, []string{"group"})
 )
 
 // runServe runs the main HTTP service
@@ -57,11 +37,12 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	stopCh := make(chan os.Signal)
 	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go checkConsistency(ctx, airlock)
-
+	// Status service.
 	if runSettings.StatusEnabled {
+		if err := airlock.RegisterMetrics(); err != nil {
+			return err
+		}
+
 		statusMux := http.NewServeMux()
 		statusMux.Handle(status.MetricsEndpoint, status.Metrics())
 		statusService := http.Server{
@@ -79,6 +60,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 		logrus.Warn("status service disabled")
 	}
 
+	// Main service.
 	serviceMux := http.NewServeMux()
 	serviceMux.Handle(server.PreRebootEndpoint, airlock.PreReboot())
 	serviceMux.Handle(server.SteadyStateEndpoint, airlock.SteadyState())
@@ -93,6 +75,11 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	go runService(stopCh, mainService, airlock)
 	defer mainService.Close()
 
+	// Background consistency checker.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go airlock.RunConsistencyChecker(ctx)
+
 	<-stopCh
 	return nil
 }
@@ -105,76 +92,4 @@ func runService(stopCh chan os.Signal, service http.Server, airlock server.Airlo
 		}).Error("service failure")
 	}
 	stopCh <- os.Interrupt
-}
-
-// checkConsistency continuously checks for consistency between configuration and remote state.
-//
-// It takes care of polling etcd, exposing the shared state as metrics, and warning if
-// it detects a mismatch with the service configuration.
-func checkConsistency(ctx context.Context, service server.Airlock) {
-	prometheus.MustRegister(configGroups)
-	prometheus.MustRegister(configSlots)
-	prometheus.MustRegister(databaseLocks)
-	prometheus.MustRegister(databaseSlots)
-
-	configGroups.Set(float64(len(service.LockGroups)))
-	for group, maxSlots := range service.LockGroups {
-		configSlots.WithLabelValues(group).Set(float64(maxSlots))
-	}
-
-	// Consistency-checking logic, with its own scope for defers.
-	checkAndLog := func() {
-		for group, maxSlots := range service.LockGroups {
-			innerCtx, cancel := context.WithTimeout(ctx, service.EtcdTxnTimeout)
-			defer cancel()
-
-			// TODO(lucab): re-arrange so that the manager can be re-used.
-			manager, err := lock.NewManager(innerCtx, service.EtcdEndpoints, group, maxSlots)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"reason": err.Error(),
-				}).Warn("consistency check, manager creation failed")
-				continue
-			}
-			semaphore, err := manager.FetchSemaphore(innerCtx)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"reason": err.Error(),
-				}).Warn("consistency check, semaphore fetch failed")
-				continue
-			}
-
-			// Update metrics.
-			databaseSlots.WithLabelValues(group).Set(float64(semaphore.TotalSlots))
-			databaseLocks.WithLabelValues(group).Set(float64(len(semaphore.Holders)))
-
-			// Log any inconsistencies.
-			if semaphore.TotalSlots != maxSlots {
-				logrus.WithFields(logrus.Fields{
-					"config":   maxSlots,
-					"database": semaphore.TotalSlots,
-					"group":    group,
-				}).Warn("semaphore max slots consistency check failed")
-			}
-			if semaphore.TotalSlots < uint64(len(semaphore.Holders)) {
-				logrus.WithFields(logrus.Fields{
-					"group":  group,
-					"holder": len(semaphore.Holders),
-					"slots":  semaphore.TotalSlots,
-				}).Warn("semaphore locks consistency check failed")
-			}
-		}
-	}
-
-	for {
-		checkAndLog()
-
-		pause := time.NewTimer(time.Minute)
-		select {
-		case <-ctx.Done():
-			break
-		case <-pause.C:
-			continue
-		}
-	}
 }
