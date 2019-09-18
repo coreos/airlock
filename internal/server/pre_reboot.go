@@ -88,8 +88,8 @@ func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 	}
 
 	// Update metrics.
-	DatabaseLocksGauge.WithLabelValues(nodeIdentity.Group).Set(float64(len(sem.Holders)))
-	DatabaseSlotsGauge.WithLabelValues(nodeIdentity.Group).Set(float64(sem.TotalSlots))
+	databaseLocksGauge.WithLabelValues(nodeIdentity.Group).Set(float64(len(sem.Holders)))
+	databaseSlotsGauge.WithLabelValues(nodeIdentity.Group).Set(float64(sem.TotalSlots))
 
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
