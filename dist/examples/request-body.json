@@ -1,6 +1,6 @@
 {
   "client_params": {
-    "group": "workers",
-    "node_uuid": "c988d250-9fdf-4cdc-bed3-9037c56406fb"
+    "group": "default",
+    "node_uuid": "c988d2509fdf5cdcbed39037c56406fb"
   }
 }
