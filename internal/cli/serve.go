@@ -33,14 +33,6 @@ var (
 		Name: "airlock_config_semaphore_slots",
 		Help: "Total number of configured slots per group.",
 	}, []string{"group"})
-	databaseSlots = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "airlock_database_semaphore_slots",
-		Help: "Total number of slots per group, in the database.",
-	}, []string{"group"})
-	databaseLocks = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "airlock_database_semaphore_lock_holders",
-		Help: "Total number of locked slots per group, in the database.",
-	}, []string{"group"})
 )
 
 // runServe runs the main HTTP service
@@ -57,11 +49,12 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	stopCh := make(chan os.Signal)
 	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go checkConsistency(ctx, airlock)
-
+	// Status service.
 	if runSettings.StatusEnabled {
+		if err := airlock.RegisterMetrics(); err != nil {
+			return err
+		}
+
 		statusMux := http.NewServeMux()
 		statusMux.Handle(status.MetricsEndpoint, status.Metrics())
 		statusService := http.Server{
@@ -79,6 +72,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 		logrus.Warn("status service disabled")
 	}
 
+	// Main service.
 	serviceMux := http.NewServeMux()
 	serviceMux.Handle(server.PreRebootEndpoint, airlock.PreReboot())
 	serviceMux.Handle(server.SteadyStateEndpoint, airlock.SteadyState())
@@ -92,6 +86,11 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	}).Info("main service")
 	go runService(stopCh, mainService, airlock)
 	defer mainService.Close()
+
+	// Background consistency checker.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go checkConsistency(ctx, airlock)
 
 	<-stopCh
 	return nil
@@ -114,8 +113,6 @@ func runService(stopCh chan os.Signal, service http.Server, airlock server.Airlo
 func checkConsistency(ctx context.Context, service server.Airlock) {
 	prometheus.MustRegister(configGroups)
 	prometheus.MustRegister(configSlots)
-	prometheus.MustRegister(databaseLocks)
-	prometheus.MustRegister(databaseSlots)
 
 	configGroups.Set(float64(len(service.LockGroups)))
 	for group, maxSlots := range service.LockGroups {
@@ -145,8 +142,8 @@ func checkConsistency(ctx context.Context, service server.Airlock) {
 			}
 
 			// Update metrics.
-			databaseSlots.WithLabelValues(group).Set(float64(semaphore.TotalSlots))
-			databaseLocks.WithLabelValues(group).Set(float64(len(semaphore.Holders)))
+			server.DatabaseLocksGauge.WithLabelValues(group).Set(float64(len(semaphore.Holders)))
+			server.DatabaseSlotsGauge.WithLabelValues(group).Set(float64(semaphore.TotalSlots))
 
 			// Log any inconsistencies.
 			if semaphore.TotalSlots != maxSlots {

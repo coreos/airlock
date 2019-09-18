@@ -48,45 +48,45 @@ func NewManager(ctx context.Context, etcdURLs []string, group string, slots uint
 //
 // It will return an error if there is a problem getting or setting the
 // semaphore, or if the maximum number of holders has been reached.
-func (m *Manager) RecursiveLock(ctx context.Context, id string) error {
+func (m *Manager) RecursiveLock(ctx context.Context, id string) (*Semaphore, error) {
 	sem, version, err := m.get(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	held, err := sem.RecursiveLock(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if held {
-		return nil
+		return sem, nil
 	}
 
 	if err := m.set(ctx, sem, version); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return sem, nil
 }
 
 // UnlockIfHeld removes this lock `id` as a holder of the semaphore
 //
 // It returns an error if there is a problem getting or setting the semaphore.
-func (m *Manager) UnlockIfHeld(ctx context.Context, id string) error {
+func (m *Manager) UnlockIfHeld(ctx context.Context, id string) (*Semaphore, error) {
 	sem, version, err := m.get(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := sem.UnlockIfHeld(id); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := m.set(ctx, sem, version); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return sem, nil
 }
 
 // FetchSemaphore fetches current semaphore version
