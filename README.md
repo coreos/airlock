@@ -9,6 +9,8 @@ Fleet-wide updates and reboots are coordinated via semaphore locking, with confi
 
 Configuration is done through a single TOML file. The service is stateless, and etcd3 is used to store the semaphore and to guarantee its consistency.
 
+![slots locking graph](./docs/images/metrics.png)
+
 ## Quickstart
 
 ```
