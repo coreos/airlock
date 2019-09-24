@@ -56,8 +56,8 @@ func printHumanShort(group string, semaphore *lock.Semaphore) {
 	fmt.Printf("group: %s\n", group)
 	fmt.Printf(" semaphore slots: %d\n", semaphore.TotalSlots)
 	fmt.Printf(" lock owners:\n")
-	for _, uuid := range semaphore.Holders {
-		fmt.Printf(" - %s\n", uuid)
+	for _, owner := range semaphore.Holders {
+		fmt.Printf(" - %s\n", owner)
 	}
 	fmt.Printf("\n---\n")
 }

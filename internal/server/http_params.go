@@ -13,21 +13,18 @@ type HTTPParams struct {
 
 // Params contains client parameters for a remote lock request.
 type Params struct {
-	NodeUUID string `json:"node_uuid"`
-	Group    string `json:"group"`
+	Group string `json:"group"`
+	ID    string `json:"id"`
 }
 
 // NodeIdentity contains validated client identity from request parameters.
 type NodeIdentity struct {
-	UUID  string
 	Group string
+	ID    string
 }
 
 // validateIdentity validates client request and parameters, returning its identity
 func validateIdentity(req *http.Request) (*NodeIdentity, error) {
-	var group string
-	var nodeID string
-
 	if req.Header.Get("fleet-lock-protocol") != "true" {
 		return nil, errors.New("wrong 'fleet-lock-protocol' header")
 	}
@@ -39,18 +36,16 @@ func validateIdentity(req *http.Request) (*NodeIdentity, error) {
 	}
 
 	if input.ClientParams.Group == "" {
-		return nil, errors.New("empty group")
+		return nil, errors.New("empty client group")
 	}
-	group = input.ClientParams.Group
 
-	if input.ClientParams.NodeUUID == "" {
-		return nil, errors.New("empty node ID")
+	if input.ClientParams.ID == "" {
+		return nil, errors.New("empty client ID")
 	}
-	nodeID = input.ClientParams.NodeUUID
 
 	identity := NodeIdentity{
-		Group: group,
-		UUID:  nodeID,
+		Group: input.ClientParams.Group,
+		ID:    input.ClientParams.ID,
 	}
 
 	return &identity, nil
