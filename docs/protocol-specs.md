@@ -37,10 +37,10 @@ All endpoints defined below are relative to a common deployment-specific base UR
 All POST requests contain well-formed JSON body according to the following schema:
 
 * `client_params` (object, mandatory)
-   * `node_uuid` (string, mandatory, non-empty): UUID of the client
+   * `id` (string, mandatory, non-empty): client identifier (e.g. node name or UUID)
    * `group` (string, mandatory, non-empty): reboot-group of the client
 
-Node UUID is a textual label conforming to UUIDv4 lowercase (non-hyphenated) format. It must be uniquely generated per client and persisted.
+Node is a case-sensitive textual label that uniquely identifies a lock holder. It is generated and persisted by each client.
 
 Group is a textual label conforming to the regexp `^[a-zA-Z0-9.-]+$`. The recommended default group name is "`default`".
 
