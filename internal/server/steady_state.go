@@ -57,7 +57,7 @@ func (a *Airlock) steadyStateHandler(req *http.Request) *herrors.HTTPError {
 	}
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
-		"uuid":  nodeIdentity.UUID,
+		"id":    nodeIdentity.ID,
 	}).Debug("processing client steady-state report")
 
 	slots, ok := a.LockGroups[nodeIdentity.Group]
@@ -79,7 +79,7 @@ func (a *Airlock) steadyStateHandler(req *http.Request) *herrors.HTTPError {
 	}
 	defer lockManager.Close()
 
-	sem, err := lockManager.UnlockIfHeld(ctx, nodeIdentity.UUID)
+	sem, err := lockManager.UnlockIfHeld(ctx, nodeIdentity.ID)
 	if err != nil {
 		msg := fmt.Sprintf("failed to release any semaphore lock: %s", err.Error())
 		logrus.Errorln(msg)
@@ -93,7 +93,7 @@ func (a *Airlock) steadyStateHandler(req *http.Request) *herrors.HTTPError {
 
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
-		"uuid":  nodeIdentity.UUID,
+		"id":    nodeIdentity.ID,
 	}).Debug("steady-state confirmed")
 
 	return nil

@@ -57,7 +57,7 @@ func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 	}
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
-		"uuid":  nodeIdentity.UUID,
+		"id":    nodeIdentity.ID,
 	}).Debug("processing client pre-reboot request")
 
 	slots, ok := a.LockGroups[nodeIdentity.Group]
@@ -79,7 +79,7 @@ func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 	}
 	defer lockManager.Close()
 
-	sem, err := lockManager.RecursiveLock(ctx, nodeIdentity.UUID)
+	sem, err := lockManager.RecursiveLock(ctx, nodeIdentity.ID)
 	if err != nil {
 		msg := fmt.Sprintf("failed to lock semaphore: %s", err.Error())
 		logrus.Errorln(msg)
@@ -93,7 +93,7 @@ func (a *Airlock) preRebootHandler(req *http.Request) *herrors.HTTPError {
 
 	logrus.WithFields(logrus.Fields{
 		"group": nodeIdentity.Group,
-		"uuid":  nodeIdentity.UUID,
+		"id":    nodeIdentity.ID,
 	}).Debug("givin green-flag to pre-reboot request")
 
 	return nil
