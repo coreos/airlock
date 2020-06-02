@@ -107,6 +107,8 @@ func (a *Airlock) checkConsistency(ctx context.Context, group string, maxSlots u
 		}).Warn("consistency check, manager creation failed")
 		return
 	}
+	defer manager.Close()
+
 	semaphore, err := manager.FetchSemaphore(innerCtx)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
