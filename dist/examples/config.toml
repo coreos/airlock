@@ -26,5 +26,5 @@ default_slots = 2
 name = "workers"
 
 [[lock.groups]]
-name = "masters"
+name = "controllers"
 slots = 1
