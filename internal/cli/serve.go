@@ -34,7 +34,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	}
 	airlock := server.Airlock{*runSettings}
 
-	stopCh := make(chan os.Signal)
+	stopCh := make(chan os.Signal, 4)
 	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
 
 	// Status service.
