@@ -49,7 +49,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 			Addr:    fmt.Sprintf("%s:%d", runSettings.StatusAddress, runSettings.StatusPort),
 			Handler: statusMux,
 		}
-		go runService(stopCh, statusService, airlock)
+		go runService(stopCh, &statusService, airlock)
 		defer statusService.Close()
 
 		logrus.WithFields(logrus.Fields{
@@ -72,7 +72,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 		"address": runSettings.ServiceAddress,
 		"port":    runSettings.ServicePort,
 	}).Info("main service")
-	go runService(stopCh, mainService, airlock)
+	go runService(stopCh, &mainService, airlock)
 	defer mainService.Close()
 
 	// Background consistency checker.
@@ -85,7 +85,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 }
 
 // runService runs an HTTP service
-func runService(stopCh chan os.Signal, service http.Server, airlock server.Airlock) {
+func runService(stopCh chan os.Signal, service *http.Server, airlock server.Airlock) {
 	if err := service.ListenAndServe(); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"reason": err,
