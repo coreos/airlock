@@ -32,7 +32,7 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 	if runSettings == nil {
 		return errors.New("nil runSettings")
 	}
-	airlock := server.Airlock{*runSettings}
+	airlock := server.Airlock{Settings: *runSettings}
 
 	stopCh := make(chan os.Signal, 4)
 	signal.Notify(stopCh, os.Interrupt, syscall.SIGTERM)
