@@ -1,6 +1,6 @@
 # Airlock
 
-[![Build status](https://travis-ci.org/coreos/airlock.svg?branch=main)](https://travis-ci.org/coreos/airlock)
+[![Build status](https://github.com/coreos/airlock/actions/workflows/go.yml/badge.svg)](https://github.com/coreos/airlock/actions/workflows/go.yml)
 [![Container image](https://quay.io/repository/coreos/airlock/status)](https://quay.io/repository/coreos/airlock)
 
 Airlock is a minimal update/reboot manager for clusters of Linux nodes. It is meant to be simple to run in a container.
