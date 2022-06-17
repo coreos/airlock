@@ -1,0 +1,40 @@
+name: Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  GO111MODULE: on
+  GOFLAGS: -mod=vendor
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        go-version: [1.17.x, 1.18.x]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Check modules
+      run: go mod verify
+    - name: Run tests
+      run: |
+        go build
+        go test -v ./...
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v2
+      with:
+        version: v1.46.2
+        args: -E=gofmt --timeout=30m0s

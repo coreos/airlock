@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	keyTemplate  = "com.coreos.airlock/groups/%s/v1/semaphore"
-	defaultGroup = "default"
+	keyTemplate = "com.coreos.airlock/groups/%s/v1/semaphore"
 )
 
 var (
