@@ -33,7 +33,7 @@ func runGetSlots(cmd *cobra.Command, cmdArgs []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), runSettings.EtcdTxnTimeout)
 		defer cancel()
 
-		manager, err := lock.NewManager(ctx, runSettings.EtcdEndpoints, group, maxSlots)
+		manager, err := lock.NewManager(ctx, runSettings.EtcdEndpoints, runSettings.ClientCertPubPath, runSettings.ClientCertKeyPath, runSettings.EtcdTxnTimeout, group, maxSlots)
 		if err != nil {
 			return err
 		}

@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
+	transport "go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -26,9 +28,22 @@ type Manager struct {
 }
 
 // NewManager returns a new lock manager, ensuring the underlying semaphore is initialized.
-func NewManager(ctx context.Context, etcdURLs []string, group string, slots uint64) (*Manager, error) {
-	// TODO(lucab): move to clientv3.New(clientv3.Config)
-	client, err := clientv3.NewFromURL(etcdURLs[0])
+func NewManager(ctx context.Context, etcdURLs []string, certPubPath string, certKeyPath string, txnTimeoutMs time.Duration, group string, slots uint64) (*Manager, error) {
+	tlsInfo := transport.TLSInfo{
+		CertFile: certPubPath,
+		KeyFile:  certKeyPath,
+	}
+
+	tlsConfig, err := tlsInfo.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := clientv3.New(clientv3.Config{
+		Endpoints:   etcdURLs,
+		DialTimeout: time.Duration(txnTimeoutMs) * time.Millisecond,
+		TLS:         tlsConfig,
+	})
 	if err != nil {
 		return nil, err
 	}

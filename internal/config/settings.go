@@ -16,8 +16,10 @@ type Settings struct {
 	StatusPort    uint64
 	StatusTLS     bool
 
-	EtcdEndpoints  []string
-	EtcdTxnTimeout time.Duration
+	EtcdEndpoints     []string
+	ClientCertPubPath string
+	ClientCertKeyPath string
+	EtcdTxnTimeout    time.Duration
 
 	LockGroups map[string]uint64
 }
