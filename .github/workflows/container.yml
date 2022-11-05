@@ -1,3 +1,6 @@
+# Maintained in https://github.com/coreos/repo-templates
+# Do not edit downstream.
+
 name: Container
 
 on:
@@ -20,12 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build and push container
         uses: coreos/actions-lib/build-container@main
         with:
           credentials: ${{ secrets.QUAY_AUTH }}
           file: dist/Dockerfile
           push: quay.io/coreos/airlock
-          # Speed up PR CI by skipping arm64
+          arches: amd64 arm64
+          # Speed up PR CI by skipping non-amd64
           pr-arches: amd64
