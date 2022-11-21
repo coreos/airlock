@@ -70,7 +70,7 @@ func (a *Airlock) steadyStateHandler(req *http.Request) *herrors.HTTPError {
 
 	ctx, cancel := context.WithTimeout(context.Background(), a.EtcdTxnTimeout)
 	defer cancel()
-	lockManager, err := lock.NewManager(ctx, a.EtcdEndpoints, nodeIdentity.Group, slots)
+	lockManager, err := lock.NewManager(ctx, a.EtcdEndpoints, a.ClientCertPubPath, a.ClientCertKeyPath, a.EtcdTxnTimeout, nodeIdentity.Group, slots)
 	if err != nil {
 		msg := fmt.Sprintf("failed to initialize semaphore manager: %s", err.Error())
 		logrus.Errorln(msg)

@@ -100,7 +100,7 @@ func (a *Airlock) checkConsistency(ctx context.Context, group string, maxSlots u
 	defer cancel()
 
 	// TODO(lucab): re-arrange so that the manager can be re-used.
-	manager, err := lock.NewManager(innerCtx, a.EtcdEndpoints, group, maxSlots)
+	manager, err := lock.NewManager(innerCtx, a.EtcdEndpoints, a.ClientCertPubPath, a.ClientCertKeyPath, a.EtcdTxnTimeout, group, maxSlots)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"reason": err.Error(),

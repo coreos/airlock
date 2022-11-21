@@ -31,8 +31,10 @@ type statusSection struct {
 
 // etcd3Section holds the optional `etcd3` fragment
 type etcd3Section struct {
-	Endpoints    []string `toml:"endpoints"`
-	TxnTimeoutMs *uint64  `toml:"transaction_timeout_ms"`
+	Endpoints         []string `toml:"endpoints"`
+	TxnTimeoutMs      *uint64  `toml:"transaction_timeout_ms"`
+	ClientCertPubPath string   `toml:"client_cert_pub_path"`
+	ClientCertKeyPath string   `toml:"client_cert_key_path"`
 }
 
 // lockSection holds the optional `lock` fragment
@@ -125,6 +127,12 @@ func mergeEtcd(settings *Settings, cfg etcd3Section) {
 	}
 	if cfg.TxnTimeoutMs != nil {
 		settings.EtcdTxnTimeout = time.Duration(*cfg.TxnTimeoutMs) * time.Millisecond
+	}
+	if len(cfg.ClientCertPubPath) > 0 {
+		settings.ClientCertPubPath = cfg.ClientCertPubPath
+	}
+	if len(cfg.ClientCertKeyPath) > 0 {
+		settings.ClientCertKeyPath = cfg.ClientCertKeyPath
 	}
 }
 
